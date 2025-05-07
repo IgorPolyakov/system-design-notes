@@ -7,7 +7,7 @@
 
 
 * [Глава 1 — Масштабирование от нуля до миллионов пользователей](./01.%20Scaling/)
-* [Глава 2 — Прикидка «на коленке»](./02.%20Back%20Of%20the%20Envelope%20Estimation/)
+* [Глава 2 — Приблизительная оценка](./02.%20Back%20Of%20the%20Envelope%20Estimation/)
 * [Глава 3 — Фреймворк для интервью по системному дизайну](./03.%20System%20Design%20Framework/)
 * [Глава 4 — Проектирование ограничителя скорости](./04.%20Rate%20Limiter//)
 * [Глава 5 — Проектирование консистентного хеширования](./05.%20Consistent%20Hashing/)
@@ -29,7 +29,7 @@
 # Дополнительные ресурсы
 
 ### Ограничение скорости
-- [Алгоритм Circuit Breaker](https://martinfowler.com/bliki/CircuitBreaker.html)
+- [Алгоритм прерыватель цепи ( Circuit Breaker)](https://martinfowler.com/bliki/CircuitBreaker.html)
 - [Uber Rate Limiter](https://github.com/uber-go/ratelimit/blob/master/ratelimit.go)
 
 ### Консистентное хеширование

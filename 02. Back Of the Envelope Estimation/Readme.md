@@ -1,98 +1,96 @@
-# Chapter 2: Back-of-the-Envelope Estimation
+# Глава 2: Приблизительная оценка
 
-## Introduction
-Back-of-the-envelope estimation is a crucial skill in system design interviews. It involves making quick, rough calculations to assess system capacity or performance. According to Jeff Dean, Google Senior Fellow, these estimates help evaluate whether designs meet requirements through thought experiments and common performance benchmarks.
+## Введение
+Приблизительная оценка — важнейший навык на собеседованиях по системному дизайну. Это включает быстрые, грубые вычисления для оценки ёмкости системы или производительности. По словам Джеффа Дина, старшего научного сотрудника Google, такие оценки помогают понять, соответствует ли дизайн требованиям, с помощью мысленных экспериментов и типовых показателей производительности.
 
-This chapter covers key concepts, methodologies, and examples to build proficiency in scalability and estimation.
+Эта глава охватывает ключевые понятия, методики и примеры, помогающие развить навыки масштабирования и оценки.
 
 ---
 
-## Section 1: Key Concepts
+## Раздел 1: Ключевые понятия
 
-### Power of Two
-Understanding data volume in terms of powers of two is fundamental:
+### Степени двойки
+Понимание объёмов данных в степенях двойки — основа точных расчётов хранилища и пропускной способности:
 
 <img src="./images/power-of-two.png" alt="power-of-two" width="500" />
 
-This knowledge helps in performing accurate storage and bandwidth calculations.
+---
+
+### Задержки, которые должен знать каждый программист
+Значения задержек показывают время выполнения различных операций в вычислительных системах. Это помогает понять относительную производительность:
+
+| Операция                      | Задержка (2020) |
+|------------------------------|-----------------|
+| Доступ к L1 кэшу             | 0.5 нс          |
+| Доступ к L2 кэшу             | 7 нс            |
+| Доступ к основной памяти     | 100 нс          |
+| Случайное чтение с SSD       | 150 мкс         |
+| Случайное позиционирование HDD| 10 мс           |
+| Запрос в пределах дата-центра| 500 мкс         |
+| Запрос между регионами       | 150 мс          |
+
+**Основные выводы:**
+- Память быстрая, диск медленный.
+- По возможности избегайте обращений к диску.
+- Сжимайте данные перед передачей по сети для экономии трафика.
+
 
 ---
 
-### Latency Numbers Every Programmer Should Know
-Latency numbers represent the time taken for various operations in computing systems. These provide insights into relative performance:
+### Показатели доступности
+Высокая доступность (HA) обеспечивает минимальное время простоя. Доступность выражается в **девятках**:
+- **99% (две девятки):** ~3.65 дней простоя в год
+- **99.9% (три девятки):** ~8.8 часов простоя в год
+- **99.99% (четыре девятки):** ~52 минут простоя в год
+- **99.999% (пять девяток):** ~5.3 минут простоя в год
+- **99.9999% (шесть девяток):** ~31.56 секунд простоя в год
 
-| Operation                | Latency (2020) |
-|--------------------------|----------------|
-| L1 Cache Access          | 0.5 ns         |
-| L2 Cache Access          | 7 ns           |
-| Main Memory Access       | 100 ns         |
-| SSD Random Read          | 150 µs         |
-| HDD Random Seek          | 10 ms          |
-| Round-Trip in Data Center| 500 µs         |
-| Inter-Region Data Center | 150 ms         |
 
-**Key Insights:**
-- Memory is fast, disk is slow.
-- Avoid disk seeks whenever possible.
-- Compress data before transmitting over the internet to save bandwidth.
-
+Облачные провайдеры, такие как Amazon, Google и Microsoft, стремятся обеспечить SLA (гарантии уровня обслуживания) **99.9% и выше**.
 
 ---
 
-### Availability Numbers
-High availability (HA) ensures minimal downtime. Availability is expressed in **nines**:
-- **99% (Two Nines):** ~3.65 days/year of downtime
-- **99.9% (Three Nines):** ~8.8 hours/year of downtime
-- **99.99% (Four Nines):** ~52 minutes/year of downtime
-- **99.999% (Five Nines):** ~5.3 minutes/year of downtime
-- **99.9999% (Six Nines):** ~31.56 seconds/year of downtime
+## Раздел 2: Пример оценки — QPS и требования к хранилищу Twitter
 
+### Предположения
+- **300 миллионов активных пользователей в месяц (MAU).**
+- **50% активных пользователей в день (DAU).**
+- **В среднем 2 твита на пользователя в день.**
+- **10% твитов содержат медиа.**
+- **Хранение данных: 5 лет.**
 
-Cloud providers like Amazon, Google, and Microsoft aim for SLAs (Service Level Agreements) of **99.9% or higher**.
+### Оценки
+1. **Запросы в секунду (QPS):**
+   - DAU = 300M x 50% = 150M
+   - QPS для твитов = 150M x 2 твита / 24 часа / 3600 секунд = ~3500
+   - Пиковый QPS = 2 x 3500 = ~7000
 
----
-
-## Section 2: Example Estimation - Twitter QPS and Storage Requirements
-
-### Assumptions
-- **300 million monthly active users (MAU).**
-- **50% daily active users (DAU).**
-- **Average tweets/user/day:** 2.
-- **10% of tweets contain media.**
-- **Data retention:** 5 years.
-
-### Estimations
-1. **Query Per Second (QPS):**
-   - DAU = \( 300M x 50\% = 150M \)
-   - Tweets QPS = \( 150M x 2 tweets / 24 hour / 3600 seconds = ~3500 )
-   - Peak QPS = \( 2 x 3500 = ~7000 \)
-
-2. **Media Storage:**
-   - **Tweet Size Components:**
-     - `tweet_id`: 64 bytes
-     - `text`: 140 bytes
-     - `media`: 1 MB
-   - **Daily Media Storage:** \( 150M x 2 x 10\% x 1MB = 30TB per day \)
-   - **5-Year Storage:** \( 30TB x 365 x 5 = ~55PB \)
+2. **Хранение медиа:**
+   - **Размер твита:**
+     - `tweet_id`: 64 байта
+     - `text`: 140 байт
+     - `media`: 1 МБ
+   - **Медиа в день:** 150M x 2 x 10% x 1MB = 30TB в день
+   - **За 5 лет:** 30TB x 365 x 5 = ~55PB
 
 ---
 
-## Section 3: Tips for Effective Estimation
+## Раздел 3: Советы для эффективной оценки
 
-### 1. Rounding and Approximation
-Precision is not critical; focus on the process. Simplify complex calculations using round numbers. For example:
-- \( 99987 / 9.1 \) can be approximated as \( 100,000 / 10 = 10,000 \).
+### 1. Округление и приближение
+Точность не критична — важно показать процесс. Упрощайте вычисления, используя округлённые числа. Например:
+- 99987 / 9.1 можно округлить до 100000 / 10 = 10000
 
-### 2. Write Down Assumptions
-Document assumptions clearly for future reference.
+### 2. Записывайте предположения
+Фиксируйте предположения явно, чтобы можно было к ним вернуться.
 
-### 3. Label Units
-Avoid ambiguity by labeling units (e.g., `5 MB` instead of `5`).
+### 3. Указывайте единицы
+Во избежание недопонимания обязательно отмечайте единицы (например, `5 МБ`, а не просто `5`).
 
-### 4. Common Estimation Scenarios
-- **QPS (Queries Per Second):** Measure traffic intensity.
-- **Peak QPS:** Account for traffic spikes.
-- **Storage Requirements:** Estimate total data needs.
-- **Cache Requirements:** Evaluate memory requirements for caching.
-- **Number of Servers:** Calculate hardware needs based on workload.
+### 4. Часто встречающиеся сценарии оценки
+- **QPS (запросов в секунду):** измерение интенсивности трафика.
+- **Пиковый QPS:** учёт пиковых нагрузок.
+- **Объём хранилища:** оценка общей потребности в данных.
+- **Кэш:** оценка объёма памяти под кэширование.
+- **Количество серверов:** расчёт необходимого оборудования по нагрузке.
 
