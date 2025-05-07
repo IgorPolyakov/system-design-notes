@@ -1,115 +1,115 @@
-# Chapter 3: A Framework for System Design Interviews
+# Глава 3: Фреймворк для интервью по системному дизайну
 
-## Introduction
-System design interviews are a key part of the hiring process, simulating real-life problem-solving scenarios. These interviews evaluate not just technical skills but also collaboration, communication, and the ability to handle ambiguous requirements.
+## Введение
+Интервью по системному дизайну — важная часть процесса найма, моделирующая реальные сценарии решения проблем. Такие интервью оценивают не только технические навыки, но и умение работать в команде, коммуницировать и справляться с неоднозначными требованиями.
 
-This chapter introduces a **4-step framework** for navigating system design interviews effectively.
-
----
-
-## Step 1: Understand the Problem and Establish Design Scope
-
-### Key Objectives
-- Clarify requirements and assumptions.
-- Avoid jumping into solutions prematurely.
-- Showcase critical thinking by asking good questions.
-
-### Approach
-- **Ask Clarifying Questions:**
-  - What are the most important features?
-  - What scale does the system need to handle?
-  - Are we building for web, mobile, or both?
-  - Are there existing technologies or constraints?
-
-- **Document Assumptions:** Write assumptions on a whiteboard or paper for reference.
-
-### Example
-**Problem:** Design a news feed system.  
-**Questions:**
-- Is it a mobile app, web app, or both?
-- How many friends can a user have?
-- Should the feed include images and videos?
-- Is the feed sorted by reverse chronological order?
+Эта глава представляет **четырёхшаговую структуру** для успешного прохождения интервью по системному дизайну.
 
 ---
 
-## Step 2: Propose High-Level Design and Get Buy-In
+## Шаг 1: Понять задачу и определить границы проектирования
 
-### Key Objectives
-- Develop a high-level architecture.
-- Collaborate with the interviewer to refine the design.
+### Основные цели
+- Уточнить требования и предположения.
+- Не торопиться с предложением решений.
+- Показать критическое мышление через качественные вопросы.
 
-### Approach
-- **Draft a Blueprint:**
-  - Use box diagrams for key components (e.g., clients, APIs, databases, caches, CDNs).
-  - Treat the interviewer as a teammate to refine the design.
+### Подход
+- **Задавайте уточняющие вопросы:**
+  - Какие функции самые важные?
+  - На какой масштаб рассчитана система?
+  - Мы проектируем для веба, мобильных устройств или и того и другого?
+  - Есть ли существующие технологии или ограничения?
 
-- **Perform Back-of-the-Envelope Calculations:**
-  - Ensure the design can handle the scale constraints.
+- **Фиксируйте предположения:** Записывайте их на доске или бумаге для наглядности.
 
-- **Walk Through Use Cases:** Identify edge cases and validate design assumptions.
-
-### Example
-For a news feed system, divide the design into:
-1. **Feed Publishing Flow:** Writing posts into databases and populating friends' feeds.
-2. **Feed Retrieval Flow:** Aggregating and displaying friends' posts in reverse chronological order.
-
----
-
-## Step 3: Design Deep Dive
-
-### Key Objectives
-- Dive into critical components.
-- Showcase depth of understanding and adaptability.
-
-### Approach
-- **Prioritize Key Components:** Focus on areas most relevant to the problem.
-- **Discuss Bottlenecks:** Identify potential performance issues and propose solutions.
-- **Balance Detail:** Avoid over-engineering or unnecessary deep dives.
-
-### Example Topics
-- **URL Shortener:** Focus on hash function design.
-- **Chat System:** Explore latency reduction and online/offline status handling.
-- **News Feed System:** Examine feed publishing and retrieval processes.
+### Пример
+**Задача:** Спроектировать систему новостной ленты.
+**Вопросы:**
+- Это мобильное приложение, веб-приложение или оба варианта?
+- Сколько друзей может быть у пользователя?
+- Включает ли лента изображения и видео?
+- Отсортирована ли лента в обратном хронологическом порядке?
 
 ---
 
-## Step 4: Wrap-Up
+## Шаг 2: Предложить общую архитектуру и получить согласие
 
-### Key Objectives
-- Highlight areas for improvement.
-- Recap the design and discuss follow-ups.
+### Основные цели
+- Разработать архитектуру высокого уровня.
+- Совместно с интервьюером уточнить и доработать дизайн.
 
-### Approach
-- **Identify Bottlenecks:** Discuss potential limitations and scaling strategies.
-- **Summarize Design:** Recap major design decisions and trade-offs.
-- **Propose Enhancements:**
-  - How to scale from 1 million to 10 million users.
-  - Error handling for server failures or network issues.
+### Подход
+- **Набросайте схему:**
+  - Используйте блоки для основных компонентов (клиенты, API, базы данных, кэш, CDN).
+  - Рассматривайте интервьюера как напарника по обсуждению архитектуры.
 
----
+- **Сделайте приблизительные расчёты:**
+  - Убедитесь, что архитектура справится с предполагаемыми нагрузками.
 
-## Best Practices
+- **Пройдитесь по сценариям использования:** Найдите крайние случаи и проверьте предположения.
 
-### Dos
-- **Ask Questions:** Clarify ambiguities before diving into solutions.
-- **Communicate:** Share your thought process with the interviewer.
-- **Iterate with the Interviewer:** Treat them as a collaborator.
-- **Show Flexibility:** Suggest alternative approaches and refine your design.
-- **Focus on Critical Components:** Prioritize key parts of the system.
-
-### Don’ts
-- **Avoid Premature Solutions:** Don’t design before understanding the requirements.
-- **Don’t Go Silent:** Communicate regularly during the process.
-- **Avoid Over-Engineering:** Focus on practical, scalable solutions.
+### Пример
+Для новостной ленты разделите проект на:
+1. **Публикация в ленту:** Запись постов в базу данных и распространение в ленты друзей.
+2. **Получение ленты:** Агрегация и отображение постов друзей в обратном хронологическом порядке.
 
 ---
 
-## Time Management
+## Шаг 3: Углублённая проработка дизайна
 
-### Suggested Time Allocation (for 45-Minute Interviews):
-1. **Understand Problem and Scope:** 3–10 minutes
-2. **High-Level Design and Buy-In:** 10–15 minutes
-3. **Deep Dive:** 10–25 minutes
-4. **Wrap-Up:** 3–5 minutes
+### Основные цели
+- Проанализировать ключевые компоненты системы.
+- Показать глубину знаний и способность адаптироваться.
+
+### Подход
+- **Выделите приоритетные компоненты:** Сосредоточьтесь на наиболее важных частях системы.
+- **Обсудите узкие места:** Укажите потенциальные проблемы производительности и предложите решения.
+- **Балансируйте глубину:** Избегайте излишней сложности и ненужных деталей.
+
+### Примеры тем
+- **Сокращение URL:** Сконцентрируйтесь на выборе хеш-функции.
+- **Чат-система:** Оптимизация задержек и обработка онлайн/оффлайн-статуса.
+- **Новостная лента:** Проработка процессов публикации и получения ленты.
+
+---
+
+## Шаг 4: Завершение
+
+### Основные цели
+- Выявить области для улучшения.
+- Подвести итог проекту и предложить дальнейшие шаги.
+
+### Подход
+- **Выявите узкие места:** Обсудите возможные ограничения и стратегии масштабирования.
+- **Суммируйте архитектуру:** Повторите ключевые решения и компромиссы.
+- **Предложите улучшения:**
+  - Масштабирование от 1 до 10 миллионов пользователей.
+  - Обработка ошибок при сбоях серверов и проблемах с сетью.
+
+---
+
+## Рекомендации
+
+### Что делать
+- **Задавайте вопросы:** Уточняйте требования до начала проектирования.
+- **Коммуницируйте:** Делитесь ходом мыслей с интервьюером.
+- **Работайте вместе с интервьюером:** Относитесь к нему как к партнёру.
+- **Будьте гибкими:** Предлагайте альтернативные подходы и уточняйте архитектуру.
+- **Сосредоточьтесь на ключевых компонентах:** Уделяйте приоритет основным частям.
+
+### Чего избегать
+- **Не спешите с решениями:** Поймите требования, прежде чем проектировать.
+- **Не молчите:** Общайтесь на протяжении всего процесса.
+- **Не усложняйте:** Сосредоточьтесь на практичных и масштабируемых решениях.
+
+---
+
+## Управление временем
+
+### Рекомендуемое распределение времени (для 45-минутного интервью):
+1. **Понимание задачи и области проектирования:** 3–10 минут
+2. **Архитектура высокого уровня и согласование:** 10–15 минут
+3. **Углублённая проработка:** 10–25 минут
+4. **Завершение:** 3–5 минут
 
