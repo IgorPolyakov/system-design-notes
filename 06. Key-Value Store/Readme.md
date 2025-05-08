@@ -46,17 +46,16 @@
 
     **Поскольку сбои сети неизбежны, распределённая система должна выдерживать сетевые разделения. Таким образом, CA-системы не могут существовать в реальных приложениях.**
 
-    In a distributed system, partitions are inevitable. When a partition occurs, we must choose between consistency and availability. For example, if node n3 goes down,
-    any data written to nodes n1 or n2 cannot be propagated to n3. Conversely, if data is written to n3 but not yet propagated to n1 and n2, nodes n1 and n2 will have stale data.
+    В распределённой системе разделения неизбежны. Когда происходит разделение, необходимо выбирать между согласованностью и доступностью. Например, если узел n3 выходит из строя, любые данные, записанные на узлы n1 или n2, не могут быть переданы на n3. И наоборот, если данные записаны на n3, но ещё не переданы на n1 и n2, узлы n1 и n2 будут содержать устаревшие данные.
 
     <p align="center">
     <img src="./images/server-down.png"  alt="Server down" width="400">
     </p>
-
-- Если выбирается CP-система, необходимо заблокировать все операции записи на n1 и n2, чтобы избежать несогласованности данных.
-- If we choose AP system, the system keeps accepting reads, even though it might return stale data.
-For writes, n1 and n2 keep accepting writes,
-and data will be synced to n3 when the network partition is resolved.
+    
+- Если мы выбираем CP-систему, необходимо заблокировать все операции записи на n1 и n2, чтобы избежать несогласованности данных.
+- Если мы выбираем AP-систему, система продолжает принимать чтения, даже если они могут возвращать устаревшие данные. 
+Для операций записи n1 и n2 продолжают принимать записи, 
+а данные будут синхронизированы с n3 после устранения сетевого разделения.
 
 ---
 
@@ -88,10 +87,10 @@ and data will be synced to n3 when the network partition is resolved.
     <img src="./images/quorum-consensus.png"   alt="Quorum consensus" width="400">
     </p>
 
-    - If R = 1 and W = N, the system is optimized for a fast read.
-    - If W = 1 and R = N, the system is optimized for fast write.
-    - If W + R > N, strong consistency is guaranteed (Usually N = 3, W = R = 2).
-    - If W + R <= N, strong consistency is not guaranteed.
+    - Если R = 1 и W = N, система оптимизируется для быстрой операции чтения.
+    - Если W = 1 и R = N, система оптимизируется для быстрой операции записи.
+    - Если W + R > N, гарантируется сильная согласованность (обычно N = 3, W = R = 2).
+    - Если W + R <= N, сильная согласованность не гарантируется.
 
 - **Модели:**
   - **Сильная согласованность:** Чтение возвращает актуальные данные.
@@ -99,118 +98,92 @@ and data will be synced to n3 when the network partition is resolved.
   - **Итоговая:** Со временем все реплики синхронизируются.
 
 
-### 4. Разрешение несогласованности
-Replication gives high availability but causes inconsistencies among replicas. Versioning and
-vector locks are used to solve inconsistency problems.
-- **Versioning:**
-    - Use **vector clocks** to track data versions and resolve conflicts.
-    - Версионирование подразумевает обработку каждого изменения данных как новой неизменяемой версии данных.
+### 4. Разрешение несогласованностей
+Репликация обеспечивает высокую доступность, но вызывает несогласованности между репликами. Для решения этих проблем используются версионирование и векторные часы.
+- **Версионирование:**
+    - Использовать **векторные часы** для отслеживания версий данных и разрешения конфликтов.
+    - Версионирование означает, что каждая модификация данных рассматривается как новая неизменяемая версия.
         <div>
         <img src="./images/consistent-server.png"   alt="Consisten hashing" width="400">
         <img src="./images/inconsistent-server.png"   alt="Inconsistent server" height="230">
         </div>
+    - Сервер 1 изменяет имя, и сервер 2 также изменяет имя одновременно. Теперь возникают конфликтующие значения, называемые версиями v1 и v2.
 
-    - Сервер 1 меняет имя, и сервер 2 также меняет имя. Эти два изменения выполняются одновременно. В результате возникают конфликтующие значения, называемые версиями v1 и v2.
-
-
-- **Vector Clock**
-    1. **Setup**: A vector clock is a [server, version] pair associated with a data item. It can be used to check
-        if one version precedes, succeeds, or in conflict with others.
-        - Assume a vector clock represented by D([S1, v1], [S2, v2], …, [Sn, vn]), If data item D is written to server
-        Si, the system must perform one of the following tasks.
-        - Where: `D` is the data item.`Si` is the server identifier.`vi` is the version counter for the data at server `Si`.
-
-    2. **Updating the Vector Clock:**  When a data item is modified at a server:
-        - If the server exists in the vector clock, its version counter is incremented.
-        - Otherwise, a new entry is added to the vector clock.
-
-    3. **Conflict Detection:**
-        - **No Conflict:** A version X is an ancestor of version Y if all counters in X are less than or equal to those in Y.
-        - **Conflict Exists:** Two versions are siblings if there is at least one counter in Y that is less than its counterpart in X.
-
-    4. **Conflict Resolution:** When conflicts are detected (sibling versions), the system relies on application-specific logic or client intervention to   reconcile the data.
-
-        <p align="center">
-        <img src="./images/vector-clock.png"  alt="Server hashing" width="500">
-        </p>
-
-- **Challenges:**
-  - Increased complexity for clients.
-  - Vector clock size may grow with many updates, requiring trimming strategies to limit its size.
-
+- **Векторные часы**
+    1. **Настройка:** Векторные часы — это пара [сервер, версия], связанная с данным элементом. Они используются для проверки, предшествует ли одна версия другой, следует за ней или конфликтует с ней.
+        - Предположим, что векторные часы представлены как D([S1, v1], [S2, v2], …, [Sn, vn]). Если элемент данных D записывается на сервер Si, система должна выполнить одно из следующих действий.
+        - Где: `D` — это элемент данных, `Si` — идентификатор сервера, `vi` — счётчик версии данных на сервере `Si`.
+    2. **Обновление векторных часов:** Когда элемент данных изменяется на сервере:
+        - Если сервер присутствует во векторных часах, его счётчик версии увеличивается.
+        - В противном случае в векторные часы добавляется новая запись.
+    3. **Обнаружение конфликтов:**
+        - **Нет конфликта:** Версия X является предком версии Y, если все счётчики в X меньше или равны соответствующим счётчикам в Y.
+        - **Есть конфликт:** Две версии являются «сиблингами», если хотя бы один счётчик в Y меньше соответствующего счётчика в X.
+    4. **Разрешение конфликтов:** При обнаружении конфликтов (версии-сиблинги) система опирается на логику приложения или вмешательство клиента для согласования данных.
+<p align="center">
+  <img src="./images/vector-clock.png" alt="Server hashing" width="500">
+</p>
+- **Проблемы:**
+  - Повышенная сложность для клиентов.
+  - Размер векторных часов может расти при большом количестве обновлений, что требует стратегий обрезки для ограничения их размера.
 
 ### 5. Работа при сбоях
 
-#### a. Failure Detection
-Недостаточно считать, что сервер отключен, основываясь только на словах другого сервера. Обычно требуется подтверждение по меньшей мере из двух независимых источников информации.
-- **Gossip Protocol:**
-    <div style="margin-left:3rem">
-        <img src="./images/gossip-protocol.png"  alt="Gossip protocol" width="600">
-    </div>
+#### a. Обнаружение сбоев
+Недостаточно полагаться на то, что сервер считается недоступным только по информации от другого сервера. Обычно требуется как минимум два независимых источника информации, чтобы отметить сервер как недоступный.
+- **Протокол сплетни (gossip):**
+<div style="margin-left:3rem">
+  <img src="./images/gossip-protocol.png" alt="Gossip protocol" width="600">
+</div>
+    - Каждый узел хранит идентификаторы участников и счётчики «heartbeat».
+    - Каждый узел периодически увеличивает свой счётчик heartbeat.
+    - Каждый узел периодически отправляет heartbeat набору случайных узлов.
+    - Если счётчик heartbeat не увеличивался более заданного времени, узел считается офлайн
 
-    - Each node maintains member IDs and heartbeat counters.
-    - Each node periodically increments its heartbeat counter.
-    - Each node periodically sends heartbeats to a set of random nodes.
-    - If the heartbeat has not increased for more than predefined periods, the member is
-    considered as offline
+#### b. Временные сбои
+- **Нечёткий кворум (sloppy quorum):** Использовать доступные узлы для временного поддержания работы.
+<p align="center">
+  <img src="./images/sloppy-quorum.png" alt="Sloppy Quorum" width="400">
+</p>
+    - После обнаружения сбоев система должна задействовать определённые механизмы для обеспечения доступности.
+    - Вместо строгого требования кворума система выбирает первые W работоспособных серверов для операций записи и первые R работоспособных серверов для чтения на кольце хеширования.
+    - Офлайн-серверы игнорируются. Если сервер недоступен, запросы временно обрабатывает другой сервер
 
+- **Отложенная передача (hinted handoff):** Офлайн-серверы получают пропущенные изменения при восстановлении.
+    - Когда вышедший из строя сервер вновь становится доступен, изменения будут переданы ему для достижения согласованности данных
 
+#### c. Постоянные сбои
+- Использовать **деревья Меркла** для эффективной синхронизации между репликами.
+Дерево Меркла (или хеш-дерево) — это структура данных для эффективного обнаружения и разрешения несогласованностей между репликами при постоянных сбоях.
 
-#### b. Temporary Failures
-- **Sloppy Quorum:** Use healthy nodes to maintain operations temporarily.
-        <p align="center">
-        <img src="./images/sloppy-quorum.png"   alt="Sloppy Quorum" width="400">
-        </p>
+- Принцип работы
+    1. **Структура:**
+        - **Листовые узлы** хранят хеш отдельных блоков данных.
+        - **Внутренние узлы** хранят хеши своих дочерних узлов.
+        - **Корневой хеш** отражает объединённое состояние всех данных дерева.
 
-    - After detecting failures, the system needs to deploy certain mechanisms to ensure availability
-    - Instead of enforcing the quorum requirement, the system chooses the first W healthy servers for writes and first R
-    healthy servers for reads on the hash ring.
-    - Offline servers are ignored. If a server is unavailable, another server will process requests temporarily
+    2. **Построение дерева Меркла:**
+        - **Шаг 1:** Разделить пространство ключей на группы (buckets).
+            <img src="./images/key-bucket.png" alt="Key Bucket" width="500">
+        - **Шаг 2:** Вычислить хеш каждого ключа в группе с помощью равномерного хеширования.
+            <img src="./images/hash-key-bucket.png" alt="Hash Key Bucket" width="500">
+        - **Шаг 3:** Создать единый хеш для каждой группы.
+            <img src="./images/hash-bucket.png" alt="Hash Bucket" width="500">
+        - **Шаг 4:** Скомбинировать хеши групп для вычисления хешей более высокого уровня, завершая расчётом корневого хеша.
+            <img src="./images/merkel-tree.png" alt="Merkel Tree" width="500">
 
-
-- **Hinted Handoff:** Offline servers catch up with changes upon recovery.
-    - When the down server is up, changes will be pushed back to achieve data consistency
-
-#### c. Permanent Failures
-- Use **Merkle Trees** for efficient synchronization between replicas.
-    A **Merkle Tree** (or hash tree) is a data structure to efficiently detect and resolve inconsistencies between replicas during permanent failures.
-
-- Working
-    1. **Structure:**
-        - **Leaf Nodes** store the hash of individual data blocks.
-        - **Non-Leaf Nodes** store the hash of their child nodes.
-        - The **root hash** represents the combined state of all data in the tree.
-
-    2. **Building a Merkle Tree:**
-        - **Step 1:** Divide the key space into buckets.
-
-            <img src="./images/key-bucket.png"   alt="Key Bucket" width="500">
-
-        - **Step 2:** Hash each key in a bucket using uniform hashing.
-
-            <img src="./images/hash-key-bucket.png"   alt="Hash Key Bucket" width="500">
-
-        - **Step 3:** Create a single hash for each bucket.
-
-            <img src="./images/hash-bucket.png"   alt="Hash Bucket" width="500">
-
-        - **Step 4:** Combine hashes of buckets to compute higher-level hashes, culminating in the root hash.
-
-            <img src="./images/merkel-tree.png"   alt="Merkel Tree" width="500">
+    3. **Синхронизация:**
+        - Для синхронизации двух реплик:
+            - Сравнить их корневые хеши.
+            - Если корневые хеши совпадают, реплики согласованы.
+            - Если корневые хеши отличаются, рекурсивно сравнить хеши дочерних узлов, чтобы найти конфликтующие группы.
+        - Синхронизируются только конфликтующие данные.
 
 
-
-    3. **Synchronization:**
-        - To synchronize two replicas:
-            - Compare their root hashes.
-            - If the root hashes match, the replicas are consistent.
-            - If the root hashes differ, compare child hashes recursively to identify inconsistent buckets.
-        - Only the inconsistent data is synchronized.
-
-- Advantages
-    - **Efficiency:** Only inconsistent data is synchronized, reducing data transfer.
-    - **Scalability:** Effective for large datasets with minimal synchronization overhead.
-    - **Reliability:** Ensures data consistency across replicas.
+- **Преимущества:**
+    - **Эффективность:** Синхронизируются только конфликтующие данные, что снижает объём передаваемых данных.
+    - **Масштабируемость:** Эффективно для больших наборов данных с минимальными накладными расходами на синхронизацию.
+    - **Надёжность:** Гарантирует согласованность данных между репликами.
 
 
 ### 6. Сбои дата-центра
@@ -219,42 +192,35 @@ vector locks are used to solve inconsistency problems.
 ---
 
 ## Пути записи и чтения
-### 1. Путь записи (архитектура Cassandra)
-
+### 1. Путь записи (на основе архитектуры Cassandra)
 <div style="margin-left:3rem">
-    <img src="./images/write-path.png"   alt="Hash Bucket" width="500">
+  <img src="./images/write-path.png" alt="Hash Bucket" width="500">
 </div>
+- Зафиксировать запись в **журнале транзакций (commit log)**.
+- Сохранить данные во **встроенный кэш (memory cache)**.
+- Сбросить данные в **SSTable** (отсортированная таблица строк) на диск, когда кэш заполнится.
 
-- Persist the write in a **commit log**.
-- Save data to a **memory cache**.
-- Flush data to **SSTable** (Sorted String Table) on disk when cache is full.
-
-
-
-### 2. Read Path
+### 2. Путь чтения
 <div style="margin-left:3rem">
-    <img src="./images/read-path.png"   alt="Hash Bucket" width="500">
-    <img src="./images/read-path-without-cache.png"   alt="Hash Bucket" width="500">
+  <img src="./images/read-path.png" alt="Hash Bucket" width="500">
+  <img src="./images/read-path-without-cache.png" alt="Hash Bucket" width="500">
 </div>
-
-- Check **memory cache** for the data.
-- If absent, use a **Bloom Filter** to locate the data in SSTables.
-- Извлечение и возврат данных.
-
+- Проверить **встроенный кэш** на наличие данных.
+- Если данных нет, использовать **фильтр Блума** для поиска данных в SSTables.
+- Извлечь и вернуть данные.
 
 ---
 
-## Финальная архитектура
-
+## Итоговая архитектура
 <p align="center">
-<img src="./images/final-architecture.png"   alt="Hash Bucket" width="500">
+  <img src="./images/final-architecture.png" alt="Hash Bucket" width="500">
 </p>
 
+- Клиенты взаимодействуют с хранилищем ключ-значение через простые API: get(key) и put(key, value).
+- Координатор — это узел, выступающий посредником между клиентом и хранилищем ключ-значение.
+- Узлы распределены по кольцу с использованием консистентного хеширования.
+- Система полностью децентрализована, поэтому добавление и перемещение узлов может происходить автоматически.
+- Данные реплицируются на нескольких узлах.
+- Нет единой точки отказа, так как каждый узел несёт одинаковые обязанности.
 
--  Clients communicate with the key-value store through simple APIs: get(key) and put(key,
-value).
-- A coordinator is a node that acts as a proxy between the client and the key-value store.
-- Nodes are distributed on a ring using consistent hashing.
-- The system is completely decentralized so adding and moving nodes can be automatic.
-- Data is replicated at multiple nodes.
-- There is no single point of failure as every node has the same set of responsibilities.
+
