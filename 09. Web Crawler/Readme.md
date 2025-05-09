@@ -1,152 +1,152 @@
-# Chapter 9: Design a Web Crawler
+# Глава 9: Проектирование веб-краулера
 
-## Introduction
-A **web crawler**, also known as a spider or robot, is used to discover and collect web content, such as web pages, images, and videos. This chapter focuses on designing a scalable web crawler for **search engine indexing**.
+## Введение
+Веб-краулер, также известный как паук или робот, используется для обнаружения и сбора веб-контента, такого как веб-страницы, изображения и видео. Эта глава посвящена проектированию масштабируемого веб-краулера для **индексации поисковых систем**.
 
-### Applications of Web Crawlers
-1. **Search Engine Indexing:** Collect web pages to create searchable indexes (e.g., Googlebot).
-2. **Web Archiving:** Preserve web data for future use (e.g., US Library of Congress).
-3. **Web Mining:** Extract knowledge from web data (e.g., financial analysis of shareholder reports).
-4. **Web Monitoring:** Detect copyright or trademark infringements.
+### Применение веб-краулеров
+1. **Индексация поисковых систем:** Сбор веб-страниц для создания поисковых индексов (например, Googlebot).
+2. **Веб-архивирование:** Сохранение веб-данных для будущего использования (например, Библиотека Конгресса США).
+3. **Веб-майнинг:** Извлечение знаний из веб-данных (например, финансовый анализ отчетов акционеров).
+4. **Веб-мониторинг:** Обнаружение нарушений авторских прав или товарных знаков.
 
-### Design Challenges
-A good web crawler must address:
-- **Scalability:** Handle billions of pages using parallelization.
-- **Robustness:** Manage bad HTML, crashes, and malicious links.
-- **Politeness:** Avoid overwhelming servers with too many requests.
-- **Extensibility:** Support new content types with minimal changes.
-
----
-
-## Step 1: Understanding the Problem
-
-### Requirements
-1. Crawl **1 billion web pages per month** (400 pages/second, peak 800 QPS).
-2. Collect **HTML-only content**.
-3. Track new and updated pages.
-4. Ignore duplicate content.
-5. Store crawled data for **5 years**, requiring ~30 PB of storage.
+### Основные задачи проектирования
+Хороший веб-краулер должен учитывать:
+- **Масштабируемость:** Обрабатывать миллиарды страниц с помощью параллелизации.
+- **Надежность:** Обрабатывать некорректный HTML, сбои и вредоносные ссылки.
+- **Вежливость:** Не перегружать серверы слишком большим количеством запросов.
+- **Расширяемость:** Поддерживать новые типы контента с минимальными изменениями.
 
 ---
 
-## Step 2: High-Level Design
+## Шаг 1: Понимание задачи
 
-### Components
+### Требования
+1. Сканировать **1 миллиард веб-страниц в месяц** (400 страниц/сек, пик — 800 запросов/сек).
+2. Собирать **только HTML-контент**.
+3. Отслеживать новые и обновленные страницы.
+4. Игнорировать дублирующийся контент.
+5. Хранить собранные данные **5 лет**, что требует примерно 30 ПБ хранилища.
+
+---
+
+## Шаг 2: Высокоуровневый дизайн
+
+### Компоненты
 <p align="center">
-<img src="./images/web-crawler-architecture.png" alt="Web Crawler Architecture" width="700">
+<img src="./images/web-crawler-architecture.png" alt="Архитектура веб-краулера" width="700">
 </p>
 
-1. **Seed URLs:** Starting points for the crawler.
-    - Need to selective as a good starting point that a crawler can utilize to traverse as many links as possible.
-    - Can be based on locality based on different popular website or based on topics.
-    - Strategies: Categorize by locality or topic (e.g., sports, healthcare).
+1. **Начальные URL (Seed URLs):** Точки старта для паука.
+   - Должны быть тщательно отобраны, чтобы паук мог обойти как можно больше ссылок.
+   - Могут быть основаны на географии или тематике популярных сайтов.
+   - Стратегии: категоризация по местоположению или теме (например, спорт, здравоохранение).
 
-2. **URL Frontier:** Stores URLs to be downloaded.
-   - Implemented as a **FIFO queue**.
+2. **URL Frontier:** Хранит URL для загрузки.
+   - Реализован как **очередь FIFO**.
 
-3. **HTML Downloader:** Downloads web pages from URLs provided by the URL Frontier.
+3. **HTML Downloader:** Загружает веб-страницы по URL из URL Frontier.
 
-4. **DNS Resolver:** Converts URLs to IP addresses.
+4. **DNS Resolver:** Преобразует URL в IP-адреса.
 
-5. **Content Parser:** Validates and parses web pages.
-   - Discards malformed pages.
+5. **Content Parser:** Проверяет и парсит веб-страницы.
+   - Отбрасывает некорректные страницы.
 
-6. **Content Seen?:** Checks for duplicate content using hash comparisons (compare the hash values of the two web pages).
+6. **Content Seen?:** Проверяет дубликаты контента с помощью сравнения хешей (сравнение хеш-значений двух веб-страниц).
 
-7. **Content Storage:** Stores HTML pages on disk (popular content in memory to reduce latency).
+7. **Content Storage:** Сохраняет HTML-страницы на диск (популярный контент — в памяти для снижения задержки).
 
-8. **URL Extractor:** Extracts new links from parsed pages.
+8. **URL Extractor:** Извлекает новые ссылки из распарсенных страниц.
 
-9. **URL Filter:** Excludes blacklisted or erroneous URLs.
+9. **URL Filter:** Исключает черные списки или ошибочные URL.
 
-10. **URL Seen?** Tracks visited URLs to avoid duplication.
+10. **URL Seen?:** Отслеживает посещенные URL, чтобы избежать дублирования.
 
-11. **URL Storage:** Stores already visited URLs.
-
-
----
-
-### Workflow
-1. Add **Seed URLs** to the URL Frontier.
-2. **HTML Downloader** fetches URLs and resolves their IPs via the DNS Resolver.
-3. **Content Parser** validates and passes content to the "Content Seen?" component.
-4. If the content is new, extract links via the **URL Extractor**.
-5. Filter and add unique links to the URL Frontier.
+11. **URL Storage:** Хранит уже посещенные URL.
 
 
 ---
 
-## Step 3: Deep Dive into Key Components
+### Рабочий процесс
+1. Добавить **начальные URL** в URL Frontier.
+2. **HTML Downloader** загружает URL и разрешает их IP через DNS Resolver.
+3. **Content Parser** проверяет и передает контент в компонент "Content Seen?".
+4. Если контент новый, извлекаются ссылки через **URL Extractor**.
+5. Фильтровать и добавлять уникальные ссылки в URL Frontier.
+
+
+---
+
+## Шаг 3: Подробный разбор ключевых компонентов
 ### DFS/BFS
--  The web can be though of as a directed graph where web pages are nodes and hyperlinks (URLs) as edges.
--  BFS is usually used for graph traversal as the depth can be be very deep thus DFS is not ideal.
--  Standard BFS does not take the priority of a URL into consideration, not every page has the same level of quality and importance.
+- Веб можно рассматривать как ориентированный граф, где веб-страницы — вершины, а гиперссылки (URL) — ребра.
+- Обычно для обхода графа используют BFS, так как глубина может быть очень большой, поэтому DFS неидеален.
+- Стандартный BFS не учитывает приоритет URL: не все страницы имеют одинаковое качество и важность.
 
 
 ### URL Frontier
-- **Politeness:** 
-    - Ensure only one request per host at a time. Add a dealy b/w two download tasks.
-    - Use a mapping from hostnames to queues and worker (download) threads.
-    - Each downloader thread has a separate FIFO queue and only downloads URLs from that queue.
+- **Вежливость:**
+    - Обеспечить только один запрос к хосту за раз. Добавить задержку между задачами загрузки.
+    - Использовать маппинг хостнеймов на очереди и рабочие потоки (download threads).
+    - Каждый поток имеет отдельную очередь FIFO и загружает URL только из этой очереди.
 
-        <img src="./images/politeness.png" alt="Politeness" width="500">
+    <img src="./images/politeness.png" alt="Вежливость" width="500">
 
-    - **Queue router:** Ensures that each queue (b1, b2, … bn) only contains URLs from the same host.
-    - **Mapping table:** It maps each host to a queue.
-    - **Queue selector:** Each worker thread is mapped to a FIFO queue, and it only downloads URLs from that queue. The queue selection logic is done by the Queue selector.
-    - **Worker thread 1 to N.** A worker thread downloads web pages sequentially from the same host. A delay can be added between two download tasks.
+    - **Маршрутизатор очередей (Queue router):** Обеспечивает, чтобы каждая очередь (b1, b2, …, bn) содержала URL только одного хоста.
+    - **Таблица маппинга:** Сопоставляет каждый хост с очередью.
+    - **Селектор очередей (Queue selector):** Назначает рабочим потокам очереди; выбор очереди выполняется селектором очередей.
+    - **Рабочий поток 1…N:** Каждый поток загружает страницы последовательно с одного хоста. Между запросами можно добавить задержку.
 
-- **Priority:** 
-    - Assign higher priority to important pages (e.g., by PageRank or update frequency).
+- **Приоритет:**
+    - Назначать более высокий приоритет важным страницам (например, PageRank или частота обновлений).
 
-        <img src="./images/prioritizer.png" alt="Politeness" width="500">
-    
-    - **Prioritizer:** It takes URLs as input and computes the priorities.
-    - **Queue f1 to fn:** Each queue has an assigned priority. Queues with high priority are selected with higher probability.
-    - **Queue selector:** Randomly choose a queue with a bias towards queues with higher priority.
-    - **Front queues:** manage prioritization
-    - **Back queues:** manage politeness
+    <img src="./images/prioritizer.png" alt="Приоритизация" width="500">
 
-- **Freshness:** Recrawl based on update history or importance.
+    - **Приоритизатор (Prioritizer):** Получает URL и вычисляет приоритеты.
+    - **Очереди f1…fn:** Каждая очередь имеет свой приоритет; очереди с высоким приоритетом выбираются с большей вероятностью.
+    - **Селектор очередей:** Случайным образом выбирает очередь с учётом приоритета.
+    - **Front queues:** Управляют приоритизацией.
+    - **Back queues:** Управляют вежливостью.
+
+- **Актуальность (Freshness):** Повторный обход на основе истории обновлений или важности.
 
 
 ### HTML Downloader
-- **Robots.txt Compliance:** Respect rules in robots.txt files.
-- **Performance Optimizations:**
-  1. Distributed crawling using multiple servers.
-  2. Use a **DNS cache** to avoid repeated lookups.
-  3. Geographically distribute crawl servers for faster downloads.
-  4. Use a short timeout to avoid slow or unresponsive servers.
+- **Соблюдение robots.txt:** Учитывать правила из файлов robots.txt.
+- **Оптимизация производительности:**
+  1. Распределённый обход с помощью нескольких серверов.
+  2. Использовать **DNS-кеш**, чтобы избежать повторных запросов.
+  3. Географически распределить серверы для ускорения загрузки.
+  4. Установить короткий таймаут для избежания медленных или неотзывчивых серверов.
 
-### Robustness
-1. **Consistent Hashing:** Distribute load among servers effectively.
-2. **Error Handling:** Prevent system crashes from exceptions.
-3. **Data Validation:** Ensure content integrity.
+### Надёжность
+1. **Консистентное хеширование:** Эффективно распределяет нагрузку между серверами.
+2. **Обработка ошибок:** Предотвращает сбои системы из-за исключений.
+3. **Проверка данных:** Обеспечивает целостность контента.
 
-### Extensibility
-- Add modules for new content types (e.g., PNG downloader, web monitor).
-- Example: Plug in a module to monitor web content for copyright violations.
+### Расширяемость
+- Добавлять модули для новых типов контента (например, загрузчик PNG, мониторинг).
+- Пример: подключить модуль для мониторинга контента на предмет нарушений авторских прав.
 
-    <img src="./images/extensibility.png" alt="Politeness" width="600">
+    <img src="./images/extensibility.png" alt="Расширяемость" width="600">
 ---
 
-### Avoiding Problematic Content
-1. **Duplicate Content:** Detect using hash comparisons.
-2. **Spider Traps:** Avoid infinite loops with techniques like URL length limits.
-3. **Data Noise:** Filter irrelevant content like ads or spam.
+### Избежание проблемного контента
+1. **Дублирование контента:** Обнаружение с помощью сравнения хешей.
+2. **Паутины (Spider Traps):** Предотвращать бесконечные циклы с помощью ограничения длины URL.
+3. **Шумовые данные (Data Noise):** Фильтровать нерелевантный контент, например рекламу или спам.
 
 ---
 
-## Step 4: Wrap Up
-### Key Takeaways
-1. Web crawlers must balance scalability, robustness, politeness, and extensibility.
-2. **Politeness** prevents overloading servers, while **priority** ensures important pages are crawled first.
-3. Efficient storage and error handling are crucial for handling large-scale crawling.
+## Шаг 4: Завершение
+### Основные выводы
+1. Веб-краулеры должны балансировать между масштабируемостью, надёжностью, вежливостью и расширяемостью.
+2. **Вежливость** предотвращает перегрузку серверов, а **приоритетность** обеспечивает обход важных страниц в первую очередь.
+3. Эффективное хранение и обработка ошибок критичны для масштабируемого обхода.
 
-### Additional Considerations
-- **Server-Side Rendering:** Handle dynamic content generated by JavaScript or AJAX.
-- **Anti-Spam Measures:** Exclude low-quality or irrelevant pages.
-- **Database Sharding:** Scale the data layer using replication and sharding.
-- **Horizontal Scaling:** Use stateless servers to scale crawl jobs efficiently.
-- **Analytics:** Collect and analyze data for insights.
+### Дополнительные соображения
+- **Рендеринг на стороне сервера:** Обработка динамического контента, сгенерированного JavaScript или AJAX.
+- **Антиспам-механизмы:** Исключать низкокачественные или нерелевантные страницы.
+- **Шардинг базы данных:** Масштабировать слой данных с помощью репликации и шардинга.
+- **Горизонтальное масштабирование:** Использовать stateless-серверы для масштабирования задач обхода.
+- **Аналитика:** Собирать и анализировать данные для получения инсайтов.
 
